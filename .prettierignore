@@ -1,0 +1,39 @@
+# Ignore node_modules and build artifacts
+node_modules/
+dist/
+build/
+coverage/
+
+# Ignore environment files
+.env
+.env.*
+
+# Ignore logs
+*.log
+
+# Ignore lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Ignore IDE and editor files
+.vscode/
+.idea/
+*.swp
+
+# Ignore generated files
+**/generated/
+**/templates/
+**/jdl-core.min.js
+**/generated-serialized-grammar.js
+
+# Ignore test fixtures and snapshots
+test/fixtures/
+*.snap
+
+# Ignore documentation
+docs/
+*.md
+
+# Ignore Git and version control files
+.git/
