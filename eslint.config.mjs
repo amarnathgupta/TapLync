@@ -5,6 +5,10 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig([
+  // ❗️ Ignore compiled output
+  {
+    ignores: ['dist/**'],
+  },
   // JS & Node config
   {
     files: ['**/*.js'],
@@ -26,6 +30,7 @@ export default defineConfig([
       parserOptions: {
         project: './tsconfig.json',
       },
+      globals: globals.node,
     },
     plugins: {
       '@typescript-eslint': tseslint.plugin,

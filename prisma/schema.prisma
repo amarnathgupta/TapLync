@@ -1,0 +1,206 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+id                String   @id @default(cuid())
+username          String?  @unique
+email             String?  @unique
+phone             String?  @unique
+name              String?
+bio               String?
+avatar            String?
+coverImage        String?
+cards             Card[]
+socialLink        SocialLink[]
+contacts          Contact[] @relation("ContactOwner")
+savedByContacts   Contact[] @relation("ContactSaved")
+role              UserRole @default(USER)
+status            UserStatus @default(ACTIVE)
+password          String?
+otp               String?
+otpExpiry         DateTime?
+emailVerified     DateTime?
+phoneVerified     DateTime?
+refreshToken      String?
+deletedAt         DateTime?
+createdAt         DateTime @default(now())
+updatedAt         DateTime @updatedAt
+leadOwner       Lead[]   @relation("LeadsOwned")
+leadViewer      Lead[]   @relation("LeadsViewed")
+cardViews CardView[]
+
+  @@index([username], name: "idx_username")
+  @@index([email], name: "idx_email")
+  @@index([phone], name: "idx_phone")
+  @@index([deletedAt], name: "idx_user_deleted_at")
+  @@index([createdAt], name: "idx_created_at")
+}
+
+model Card {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  title       String
+  slug        String  
+  email       String?
+  companyName String?
+  description String?
+  address     String?
+  coverImage  String?
+  avatar      String?
+  status      CardStatus @default(ACTIVE)
+  type        CardType   @default(PERSONAL)
+  isDefault   Boolean    @default(false)
+  isFeatured  Boolean    @default(false)
+  isPublic    Boolean    @default(false)
+  phone       PhoneNumber[]
+  socialLink  SocialLink[]
+  cardViews    CardView[]
+  leads Lead[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?
+
+  @@index([userId], name: "idx_user_id")
+  @@index([deletedAt], name: "idx_card_deleted_at")
+}
+
+model SocialLink {
+  id        String    @id @default(cuid())
+  platform  Platform
+  url       String
+  userId    String?
+  user      User?     @relation(fields: [userId], references: [id])
+  cardId    String?
+  card      Card?     @relation(fields: [cardId], references: [id])
+
+  @@index([userId], name: "idx_social_user_id")
+  @@index([cardId], name: "idx_social_card_id")
+}
+
+model PhoneNumber {
+  id        String   @id @default(cuid())
+  number    String
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id])
+  type      PhoneType
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cardId], name: "idx_card_id")
+}
+
+model Contact {
+  id              String    @id @default(cuid())
+  ownerId         String    //User A - the one saving the contact
+  contactUserId   String    //User B - the one being saved
+  owner           User      @relation("ContactOwner", fields: [ownerId], references: [id])
+  contactUser     User      @relation("ContactSaved", fields: [contactUserId], references: [id])
+
+  profileUrl      String
+  email           String?
+  jobTitle        String?
+  company         String?
+  note            String?
+  tag             String?
+  metAt           String?
+  locationLat     Float?
+  locationLong    Float?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([ownerId, contactUserId]) // Prevents duplicate entries
+  @@index([ownerId], name: "idx_contact_owner")
+  @@index([contactUserId], name: "idx_contact_user")
+}
+
+model CardView {
+  id        String   @id @default(cuid())
+  cardId    String
+  viewerId  String?  // Optional: maybe someone scanned anonymously
+  card      Card     @relation(fields: [cardId], references: [id])
+  viewer    User?    @relation(fields: [viewerId], references: [id])
+  scannedAt DateTime @default(now())
+  locationLat Float?
+  locationLong Float?
+  isAnonymous Boolean @default(false) // If true, viewerId is null
+
+  @@index([cardId])
+  @@index([viewerId])
+}
+
+model Lead {
+  id            String   @id @default(cuid())
+  ownerId       String   // User A (card owner)
+  cardId        String
+  viewerId      String   // User B (person who viewed/scanned)
+  card          Card     @relation(fields: [cardId], references: [id])
+  owner         User     @relation("LeadsOwned", fields: [ownerId], references: [id])
+  viewer        User     @relation("LeadsViewed", fields: [viewerId], references: [id])
+  note          String?
+  tag           String?   // e.g. "Business", "Follow Up"
+  metAt         String?   // e.g. "NextJS Conf 2025"
+  locationLat   Float?
+  locationLong  Float?
+  source        LeadSource
+  createdAt     DateTime @default(now())
+
+  @@index([ownerId])
+  @@index([viewerId])
+  @@unique([ownerId, viewerId, cardId])
+}
+
+
+enum PhoneType {
+  MOBILE
+  WORK
+  HOME
+  FAX
+  OTHER
+}
+enum Platform {
+  LINKEDIN
+  TWITTER
+  INSTAGRAM
+  FACEBOOK
+  CUSTOM
+}
+enum UserRole {
+  USER
+  ADMIN
+}
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  BANNED
+}
+enum CardStatus {
+  ACTIVE
+  INACTIVE
+  BANNED
+}
+enum CardType {
+  PERSONAL
+  BUSINESS
+}
+enum LeadSource {
+  QR
+  LINK
+  NFC
+  MANUAL
+  EVENT
+}
